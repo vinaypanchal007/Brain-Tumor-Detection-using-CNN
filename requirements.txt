@@ -1,13 +1,6 @@
-numpy
-pandas
-matplotlib
-opencv-python
-scikit-learn
-tensorflow==2.16.1
-keras
-jupyter
-notebook
-Pillow
 streamlit
-seaborn
+tensorflow==2.17.1
+numpy
+opencv-python-headless
+Pillow
 gdown
