@@ -1,20 +1,21 @@
 import os
+os.environ["KERAS_BACKEND"] = "jax"  # Use JAX backend instead of TensorFlow
 
 import streamlit as st
 import numpy as np
 import cv2
 from PIL import Image
-import tensorflow as tf
+import keras
 import gdown
 
-#Page config
+# Page config
 st.set_page_config(
     page_title="Brain Tumor Detector",
     page_icon="🧠",
     layout="centered",
 )
 
-#Custom CSS
+# Custom CSS
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap');
@@ -172,7 +173,7 @@ hr {
 </style>
 """, unsafe_allow_html=True)
 
-#Title
+# Title
 st.markdown("""
 <div class="title-block">
     <h1>🧠 Brain Tumor Detector</h1>
@@ -182,22 +183,18 @@ st.markdown("""
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
-#Load model
+# Load model
 @st.cache_resource
 def load_model():
     model_path = "brain_tumor_model.h5"
-
     try:
-        # Download model if not present
         if not os.path.exists(model_path):
             file_id = "1Pc3vgDNR_KZDa6TwiKvLqcT7D0XjH-rf"
             url = f"https://drive.google.com/uc?id={file_id}"
-
             with st.spinner("Downloading AI model... Please wait."):
                 gdown.download(url, model_path, quiet=False)
 
-        # Load model
-        model = tf.keras.models.load_model(model_path)
+        model = keras.saving.load_model(model_path)
         return model
 
     except Exception as e:
@@ -209,7 +206,7 @@ model = load_model()
 if model is None:
     st.stop()
 
-#Upload
+# Upload
 st.markdown("#### Upload MRI Scan")
 
 uploaded_file = st.file_uploader(
@@ -220,7 +217,6 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file is not None:
-    # Show loading spinner while image is being read
     loading_placeholder = st.empty()
     loading_placeholder.markdown("""
     <div class="loading-box">
@@ -229,11 +225,9 @@ if uploaded_file is not None:
     </div>
     """, unsafe_allow_html=True)
 
-    # Read & fully decode image
     image = Image.open(uploaded_file)
-    _ = np.array(image)  # force full decode
+    _ = np.array(image)
 
-    # Clear spinner, show image
     loading_placeholder.empty()
 
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -242,20 +236,16 @@ if uploaded_file is not None:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Predict button
     if st.button("ANALYSE SCAN"):
         with st.spinner("Analysing..."):
-            # Preprocess
             img_array = np.array(image.convert("RGB"))
             img_resized = cv2.resize(img_array, (200, 200))
             img_normalized = img_resized.astype("float32") / 255.0
             img_input = np.expand_dims(img_normalized, axis=0)
 
-            # Predict
             prediction = model.predict(img_input, verbose=0)[0][0]
-            has_tumor = prediction > 0.5
+            has_tumor = float(prediction) > 0.5
 
-        # Result
         if has_tumor:
             st.markdown("""
             <div class="result-card result-positive">
